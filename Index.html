@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HeartWords - Poetry for Your Emotions</title>
+<style>
+  body {
+    font-family: 'Georgia', serif;
+    background: linear-gradient(to bottom, #2c3e50, #1a1a2e);
+    color: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+  }
+ .container {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    padding: 30px;
+    border-radius: 16px;
+    max-width: 600px;
+    width: 100%;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+  h1 { text-align: center; color: #e0b3ff; }
+ .emotions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin: 20px 0; }
+ .emotion-btn {
+    background: #4a3f69; border: none; color: white; padding: 10px 18px;
+    border-radius: 20px; cursor: pointer; transition: 0.3s;
+  }
+ .emotion-btn:hover,.emotion-btn.active { background: #9b59b6; }
+  textarea {
+    width: 100%; height: 100px; background: rgba(0,0,0,0.3);
+    border: 1px solid #555; border-radius: 8px; color: white; padding: 10px;
+    font-family: inherit; resize: none;
+  }
+  button {
+    width: 100%; padding: 12px; margin-top: 10px;
+    background: #8e44ad; border: none; color: white; font-size: 16px;
+    border-radius: 8px; cursor: pointer;
+  }
+  button.secondary { background: #34495e; }
+  #poemOutput {
+    margin-top: 25px; padding: 20px; background: rgba(0,0,0,0.2);
+    border-left: 3px solid #9b59b6; white-space: pre-wrap; font-style: italic;
+  }
+  #prompt { margin-top: 15px; font-size: 14px; color: #ccc; }
+
+  /* Breathing Circle */
+  #breathBox { display:none; text-align:center; margin-top:20px; }
+ .circle {
+    width: 120px; height: 120px; border-radius: 50%;
+    background: radial-gradient(circle, #9b59b6, #4a3f69);
+    margin: 20px auto; animation: breathe 8s infinite;
+  }
+  @keyframes breathe {
+    0%,100% { transform: scale(1); }
+    25% { transform: scale(1.4); } /* inhale */
+    50% { transform: scale(1.4); } /* hold */
+    75% { transform: scale(1); } /* exhale */
+  }
+  #breathText { font-size: 18px; color: #e0b3ff; }
+
+  /* Canvas for saving image */
+  #poemCanvas { display:none; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>HeartWords</h1>
+    <p style="text-align:center;">Turn what’s in your chest into words</p>
+
+    <button class="secondary" onclick="toggleBreath()">Breathe with me first</button>
+    <div id="breathBox">
+      <div class="circle"></div>
+      <div id="breathText">Breathe In...</div>
+    </div>
+
+    <div class="emotions">
+      <button class="emotion-btn" data-emotion="grief">Grief</button>
+      <button class="emotion-btn" data-emotion="love">Love</button>
+      <button class="emotion-btn" data-emotion="longing">Longing</button>
+      <button class="emotion-btn" data-emotion="obsession">Obsession</button>
+      <button class="emotion-btn" data-emotion="peace">Peace</button>
+    </div>
+
+    <textarea id="memory" placeholder="Write 1 memory, name, or word that’s on your mind..."></textarea>
+    <button id="generate">Turn it into a poem</button>
+
+    <div id="poemOutput" style="display:none;"></div>
+    <div id="prompt"></div>
+    <button id="saveBtn" style="display:none;" onclick="saveAsImage()">Save as Image</button>
+    <canvas id="poemCanvas" width="1080" height="1350"></canvas>
+  </div>
+
+<script>
+  let selectedEmotion = "";
+  document.querySelectorAll('.emotion-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.emotion-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedEmotion = btn.dataset.emotion;
+    });
+  });
+
+  const poemTemplates = {
+    grief: (word) => `My chest closes\nwhen ${word} floods my mind.\nI reach for your laugh\nbut only echo answers.\nIs this grief?\nOr love that forgot how to leave?`,
+    love: (word) => `Is this love?\nThe way ${word}\nsettles deep in my bones\nand makes the world quiet.\nA blessing...\nOr a beautiful curse.`,
+    longing: (word) => `I still remember\nthe sound of ${word}.\nIt lingers in my mind\neven though we’re no longer the same.\nMy heart waits\nin the space you left.`,
+    obsession: (word) => `His ghost haunts my dreams everynight.\nI can't help but feel my chest tightening\nas ${word} floods down my mind.\nA mind-boggling thought hits me:\nI'm obsessed\nWITH ${word.toUpperCase()}!`,
+    peace: (word) => `Tonight I set down ${word}.\nI let the moon hold it for me.\nMy breath comes easier now.\nMaybe healing\nis just learning\nto love without drowning.`
+  };
+
+  const prompts = {
+    grief: "Prompt: Write a letter you’ll never send. What’s one thing you wish they knew?",
+    love: "Prompt: Name 3 small things about them that made you feel safe.",
+    longing: "Prompt: What would you say to them if you had 30 seconds?",
+    obsession: "Prompt: What part of this is about them, and what part is about you missing you?",
+    peace: "Prompt: What’s one thing you can do for yourself tonight?"
+  };
+
+  document.getElementById('generate').addEventListener('click', () => {
+    const word = document.getElementById('memory').value.trim() || "you";
+    if (!selectedEmotion) { alert("Pick how you feel first"); return; }
+
+    const poem = poemTemplates[selectedEmotion](word);
+    document.getElementById('poemOutput').style.display = 'block';
+    document.getElementById('poemOutput').innerText = poem;
+    document.getElementById('prompt').innerText = prompts[selectedEmotion];
+    document.getElementById('saveBtn').style.display = 'block';
+  });
+
+  // Breathing animation
+  let breathInterval;
+  function toggleBreath() {
+    const box = document.getElementById('breathBox');
+    box.style.display = box.style.display === 'none'? 'block' : 'none';
+    let step = 0;
+    const texts = ["Breathe In...", "Hold...", "Breathe Out...", "Hold..."];
+    clearInterval(breathInterval);
+    breathInterval = setInterval(() => {
+      document.getElementById('breathText').innerText = texts[step % 4];
+      step++;
+    }, 2000);
+  }
+
+  // Save as Image like your night-sky post
+  function saveAsImage() {
+    const canvas = document.getElementById('poemCanvas');
+    const ctx = canvas.getContext('2d');
+    const poem = document.getElementById('poemOutput').innerText;
+
+    // Night sky background
+    const gradient = ctx.createLinearGradient(0,0,0,canvas.height);
+    gradient.addColorStop(0, "#1a1a2e");
+    gradient.addColorStop(1, "#2c3e50");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0,0,canvas.width, canvas.height);
+
+    // Stars
+    ctx.fillStyle = "white";
+    for(let i=0; i<100; i++){
+      ctx.beginPath();
+      ctx.arc(Math.random()*canvas.width, Math.random()*canvas.height/2, Math.random(), 0, Math.PI*2);
+      ctx.fill();
+    }
+    // Moon
+    ctx.beginPath();
+    ctx.arc(canvas.width-150, 120, 40, 0, Math.PI*2);
+    ctx.fillStyle = "#f0f0f0";
+    ctx.fill();
+
+    // Title
+    ctx.font = "48px Georgia";
+    ctx.fillStyle = "#e0b3ff";
+    ctx.fillText("Is this love?", 60, 100);
+
+    // Poem
+    ctx.font = "32px Courier";
+    ctx.fillStyle = "white";
+    const lines = poem.split('\n');
+    lines.forEach((line, i) => {
+      ctx.fillText(line, 60, 180 + i*45);
+    });
+
+    // Download
+    const link = document.createElement('a');
+    link.download = 'heartwords-poem.png';
+    link.href = canvas.toDataURL();
+    link.click();
+  }
+</script>
+</body>
+  </html>
